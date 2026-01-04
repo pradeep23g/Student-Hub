@@ -3,7 +3,7 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAaXph8dD1-3M0JE1_so65_Z6AnEnFIRug",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "student-hub-0001.firebaseapp.com",
   projectId: "student-hub-0001",
   storageBucket: "student-hub-0001.firebasestorage.app",
