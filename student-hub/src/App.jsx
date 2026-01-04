@@ -1,22 +1,27 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import {app} from "./firebase";
-import { loginWithGoogle } from './auth';
+import { useState } from "react";
+import GoogleLoginButton from "./component/GoogleLoginButton";
+import FileUpload from "./component/FileUpload";
 
 function App() {
-  console.log("firebase app:", app);
-  return (
-    <div style={{padding:"30px"}}>
-      <h1>Student Hub 🤯</h1>
-      <button onClick={loginWithGoogle}>
-        Test Google login
-      </button>
-    </div>
-  )
+  const [user, setUser] = useState(null);
 
-  
+  return (
+    <div style={{ padding: "40px" }}>
+      <h1>Student Hub 📚</h1>
+
+      {!user ? (
+        <>
+          <p>Please sign in to continue</p>
+          <GoogleLoginButton setUser={setUser} />
+        </>
+      ) : (
+        <>
+          <p>Welcome, {user.email}</p>
+          <FileUpload user={user} />
+        </>
+      )}
+    </div>
+  );
 }
 
 export default App;
