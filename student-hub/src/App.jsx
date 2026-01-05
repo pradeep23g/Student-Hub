@@ -1,6 +1,8 @@
 import { useState } from "react";
 import GoogleLoginButton from "./component/GoogleLoginButton";
 import FileUpload from "./component/FileUpload";
+import ModeratorDashboard from "./component/ModeratorDashboard";
+
 
 function App() {
   const [user, setUser] = useState(null);
@@ -18,6 +20,9 @@ function App() {
         <>
           <p>Welcome, {user.email}</p>
           <FileUpload user={user} />
+          <hr />
+          <ModeratorDashboard />
+
         </>
       )}
     </div>
