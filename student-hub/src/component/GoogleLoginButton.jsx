@@ -1,14 +1,14 @@
 import { loginWithGoogle } from "../auth";
 import { saveUserIfNotExists } from "../firestore";
 
-function GoogleLoginButton({ setUser }) {
+function GoogleLoginButton({ onLogin }) {
   const handleLogin = async () => {
     const user = await loginWithGoogle();
 
     if (user) {
       await saveUserIfNotExists(user);
-      setUser(user);
       
+      onLogin(user);
     }
   };
 
