@@ -56,7 +56,7 @@ function App() {
           <FileUpload user={user} />
           <hr />
           
-          <StudentDashboard />
+          <StudentDashboard role = {role} />
 
           {
             role === "moderator" && (
