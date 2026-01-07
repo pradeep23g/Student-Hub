@@ -4,6 +4,7 @@ import {
   where,
   getDocs,
   doc,
+  deleteDoc,
   updateDoc,
   serverTimestamp
 } from "firebase/firestore";
@@ -55,6 +56,17 @@ export const updateResource = async (id, updates) => {
     ...updates,
     updatedAt: serverTimestamp()
   });
+};
+
+/* ================= REMOVE (DELETE) RESOURCE ================ */
+export const deleteResource = async (id) => {
+  try {
+    await deleteDoc(doc(db, "resources", id));
+    return true;
+  } catch (error) {
+    console.error("Delete failed:", error);
+    return false;
+  }
 };
 
 /* ================= FETCH PUBLISHED (ADMIN) ================= */

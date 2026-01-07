@@ -68,7 +68,7 @@ const ModeratorDashboard = () => {
           {queue.map(file => (
             <li key={file.id} style={{ marginBottom: "15px" }}>
               <strong>{file.originalName}</strong><br />
-              <a href={file.fileURL} target="_blank" rel="noreferrer">
+              <a href={file.fileUrl} target="_blank" rel="noreferrer">
                 View File
               </a><br />
               <button onClick={() => handleApprove(file)}>

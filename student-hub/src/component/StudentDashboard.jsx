@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getPublishedResources } from "../resourceService";
-import { updateResource } from "../adminService";
+import { updateResource, deleteResource } from "../adminService";
 
 const StudentDashboard = ({ role }) => {
   const [resources, setResources] = useState([]);
@@ -26,20 +26,40 @@ const StudentDashboard = ({ role }) => {
 
   const subjects = [...new Set(resources.map(r => r.subject))];
 
+  const startEdit = (file) => {
+    setEditingId(file.id);
+    setEditData({
+      title: file.title,
+      subject: file.subject,
+      unit: file.unit || ""
+    });
+  };
+
+  const saveEdit = async (id) => {
+    await updateResource(id, editData);
+    setEditingId(null);
+    loadResources();
+  };
+
+  const handleDelete = async (id) => {
+    const ok = window.confirm("Are you sure you want to delete this resource?");
+    if (!ok) return;
+
+    await deleteResource(id);
+    loadResources();
+  };
+
   return (
     <div style={{ padding: "20px" }}>
       <h2>📚 Student Hub</h2>
 
       {/* ================= SUBJECT FOLDERS ================= */}
       {!selectedSubject && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-            gap: "20px",
-            marginBottom: "20px"
-          }}
-        >
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+          gap: "20px"
+        }}>
           {subjects.map(subject => (
             <div
               key={subject}
@@ -52,9 +72,7 @@ const StudentDashboard = ({ role }) => {
               }}
             >
               <h3>📁 {subject}</h3>
-              <p>
-                {resources.filter(r => r.subject === subject).length} files
-              </p>
+              <p>{resources.filter(r => r.subject === subject).length} files</p>
             </div>
           ))}
         </div>
@@ -63,27 +81,15 @@ const StudentDashboard = ({ role }) => {
       {/* ================= UNIT FOLDERS ================= */}
       {selectedSubject && !selectedUnit && (
         <>
-          <button
-            onClick={() => {
-              setSelectedSubject(null);
-              setSelectedUnit(null);
-              setSearch("");
-            }}
-            style={{ marginBottom: "10px" }}
-          >
-            ⬅ Back to Subjects
-          </button>
-
+          <button onClick={() => setSelectedSubject(null)}>⬅ Back to Subjects</button>
           <h3>{selectedSubject}</h3>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-              gap: "15px",
-              marginBottom: "20px"
-            }}
-          >
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+            gap: "15px",
+            marginTop: "15px"
+          }}>
             {[...new Set(
               resources
                 .filter(r => r.subject === selectedSubject)
@@ -100,65 +106,43 @@ const StudentDashboard = ({ role }) => {
                 }}
               >
                 <h4>📁 Unit {unit}</h4>
-                <p>
-                  {
-                    resources.filter(
-                      r =>
-                        r.subject === selectedSubject &&
-                        (r.unit || "Uncategorized") === unit
-                    ).length
-                  } files
-                </p>
               </div>
             ))}
           </div>
         </>
       )}
 
-      {/* ================= FILES INSIDE UNIT ================= */}
+      {/* ================= FILES ================= */}
       {selectedSubject && selectedUnit && (
         <>
-          <button
-            onClick={() => {
-              setSelectedUnit(null);
-              setSearch("");
-            }}
-            style={{ marginBottom: "10px" }}
-          >
-            ⬅ Back to Units
-          </button>
+          <button onClick={() => setSelectedUnit(null)}>⬅ Back to Units</button>
 
-          <h3>
-            {selectedSubject} → Unit {selectedUnit}
-          </h3>
+          <h3>{selectedSubject} → Unit {selectedUnit}</h3>
 
           <input
             type="text"
             placeholder="Search by title..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ marginBottom: "15px", padding: "5px" }}
+            style={{ margin: "10px 0", padding: "5px" }}
           />
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
-              gap: "15px"
-            }}
-          >
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
+            gap: "15px"
+          }}>
             {resources
-              .filter(
-                r =>
-                  r.subject === selectedSubject &&
-                  (r.unit || "Uncategorized") === selectedUnit &&
-                  r.title.toLowerCase().includes(search.toLowerCase())
+              .filter(r =>
+                r.subject === selectedSubject &&
+                (r.unit || "Uncategorized") === selectedUnit &&
+                r.title.toLowerCase().includes(search.toLowerCase())
               )
               .map(file => (
                 <div
                   key={file.id}
                   style={{
-                    border: "1px solid #ddd",
+                    border: "1px solid #333",
                     padding: "15px",
                     borderRadius: "8px"
                   }}
@@ -184,26 +168,13 @@ const StudentDashboard = ({ role }) => {
                         }
                       />
 
-                      <button
-                        onClick={async () => {
-                          await updateResource(file.id, editData);
-                          setEditingId(null);
-                          loadResources();
-                        }}
-                      >
-                        💾 Save
-                      </button>
-
-                      <button onClick={() => setEditingId(null)}>
-                        ❌ Cancel
-                      </button>
+                      <button onClick={() => saveEdit(file.id)}>💾 Save</button>
+                      <button onClick={() => setEditingId(null)}>❌ Cancel</button>
                     </>
                   ) : (
                     <>
-                      <h3>{file.title}</h3>
-                      <p>
-                        <strong>Unit:</strong> {file.unit || "—"}
-                      </p>
+                      <h4>{file.title}</h4>
+                      <p><strong>Unit:</strong> {file.unit || "—"}</p>
 
                       <a
                         href={file.fileUrl}
@@ -211,44 +182,34 @@ const StudentDashboard = ({ role }) => {
                         rel="noreferrer"
                         style={{
                           display: "inline-block",
-                          marginTop: "10px",
-                          padding: "8px 12px",
+                          marginTop: "8px",
+                          padding: "6px 10px",
                           background: "#007bff",
                           color: "#fff",
-                          textDecoration: "none",
-                          borderRadius: "4px"
+                          borderRadius: "4px",
+                          textDecoration: "none"
                         }}
                       >
                         Download / View
                       </a>
 
-                      {/* 🔐 Moderator-only Edit */}
+                      {/* 🔐 MODERATOR ONLY ACTIONS */}
                       {role === "moderator" && (
-                        <button
-                          style={{ marginLeft: "10px" }}
-                          onClick={() => {
-                            setEditingId(file.id);
-                            setEditData({
-                              title: file.title,
-                              subject: file.subject,
-                              unit: file.unit || ""
-                            });
-                          }}
-                        >
-                          ✏ Edit
-                        </button>
+                        <div style={{ marginTop: "10px" }}>
+                          <button onClick={() => startEdit(file)}>✏ Edit</button>
+                          <button
+                            onClick={() => handleDelete(file.id)}
+                            style={{ marginLeft: "8px", color: "red" }}
+                          >
+                            🗑 Delete
+                          </button>
+                        </div>
                       )}
                     </>
                   )}
                 </div>
               ))}
           </div>
-
-          {resources.filter(
-            r =>
-              r.subject === selectedSubject &&
-              (r.unit || "Uncategorized") === selectedUnit
-          ).length === 0 && <p>No resources found.</p>}
         </>
       )}
     </div>
