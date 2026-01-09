@@ -1,76 +1,56 @@
 import { useState } from "react";
+import MainLayout from "./layouts/MainLayout";
+
 import GoogleLoginButton from "./component/GoogleLoginButton";
 import FileUpload from "./component/FileUpload";
-import ModeratorDashboard from "./component/ModeratorDashboard";
 import StudentDashboard from "./component/StudentDashboard";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "./firebase";
+import ModeratorDashboard from "./component/ModeratorDashboard";
+import { logout } from "./auth";
 
-
-
-
+import { getUserRole } from "./firestore";
 
 function App() {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
 
-
-  const fetchUserRole = async (firebaseUser) => {
-    const userRef = doc(db, "users", firebaseUser.uid);
-    const snap = await getDoc(userRef);
-
-    if (!snap.exists()) {
-      //assigning the default role to student
-      await setDoc(userRef, {
-        email: firebaseUser.email,
-        role: "student",
-        createdAt: new Date()
-      });
-      return "student";
-    }
-    return snap.data().role;
-  };
-
   const handleLogin = async (firebaseUser) => {
     setUser(firebaseUser);
-    
-    const userRole = await fetchUserRole(firebaseUser);
+
+    const userRole = await getUserRole(firebaseUser);
     setRole(userRole);
   };
+    const handleLogout = async () => {
+    await logout();
+    setUser(null);
+    setRole(null);
+  };
 
-  if (user && !role){
-    return <p>Loading user role....</p>;
-  }
   return (
-    <div style={{ padding: "40px" }}>
-      <h1>Student Hub 📚</h1>
+  <MainLayout onLogout={handleLogout} isLoggedIn={!!user}>
+    {!user ? (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] text-center">
+        <p className="text-lg mb-4 text-slate-500 dark:text-slate-400">
+          Please sign in to continue
+        </p>
+        <GoogleLoginButton onLogin={handleLogin} />
+      </div>
+    ) : (
+      <>
+        <FileUpload user={user} />
 
-      {!user ? (
-        <>
-          <p>Please sign in to continue</p>
-          <GoogleLoginButton onLogin ={handleLogin} />
-        </>
-      ) : (
-        <>
-          <p>Welcome, {user.email}</p>
-          <FileUpload user={user} />
-          <hr />
-          
-          <StudentDashboard role = {role} />
+        {!role ? (
+          <p className="text-slate-400 mt-10">Loading dashboard…</p>
+        ) : (
+          <>
+            <StudentDashboard role={role} />
+            {role === "moderator" && <ModeratorDashboard />}
+          </>
+        )}
+      </>
+    )}
+  </MainLayout>
+);
 
-          {
-            role === "moderator" && (
-              <>
-                <hr />
-                <ModeratorDashboard />
-              </>
-            )
-          }
-
-        </>
-      )}
-    </div>
-  );
 }
 
 export default App;

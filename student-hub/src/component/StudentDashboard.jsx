@@ -49,89 +49,120 @@ const StudentDashboard = ({ role }) => {
     loadResources();
   };
 
-  return (
-    <div style={{ padding: "20px" }}>
-      <h2>📚 Student Hub</h2>
+  /* ================= EMPTY STATE ================= */
+  if (subjects.length === 0) {
+    return (
+      <div className="text-center text-slate-400 mt-20">
+        <p className="text-lg">No resources published yet.</p>
+        <p className="text-sm mt-2">
+          Upload something or wait for moderation.
+        </p>
+      </div>
+    );
+  }
 
-      {/* ================= SUBJECT FOLDERS ================= */}
+  return (
+    <div>
+      {/* ================= SUBJECT CARDS ================= */}
       {!selectedSubject && (
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-          gap: "20px"
-        }}>
-          {subjects.map(subject => (
-            <div
-              key={subject}
-              onClick={() => setSelectedSubject(subject)}
-              style={{
-                border: "1px solid #444",
-                padding: "20px",
-                borderRadius: "8px",
-                cursor: "pointer"
-              }}
-            >
-              <h3>📁 {subject}</h3>
-              <p>{resources.filter(r => r.subject === subject).length} files</p>
-            </div>
-          ))}
-        </div>
+        <>
+          <h2 className="text-3xl font-bold mb-2">My Subjects</h2>
+          <p className="text-slate-400 mb-8">
+            Select a subject to view resources
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {subjects.map(subject => {
+              const fileCount = resources.filter(
+                r => r.subject === subject
+              ).length;
+
+              return (
+                <button
+                  key={subject}
+                  onClick={() => setSelectedSubject(subject)}
+                  className="group bg-slate-800 hover:bg-slate-700 transition-all
+                             p-6 rounded-2xl border border-slate-700
+                             text-left relative overflow-hidden"
+                >
+                  <div className="text-3xl mb-4">📁</div>
+
+                  <h3 className="text-xl font-bold text-white">
+                    {subject}
+                  </h3>
+
+                  <p className="text-sm text-slate-400 mt-1">
+                    {fileCount} files
+                  </p>
+
+                  <div className="absolute bottom-0 left-0 h-1 w-0 bg-indigo-500
+                                  transition-all group-hover:w-full" />
+                </button>
+              );
+            })}
+          </div>
+        </>
       )}
 
-      {/* ================= UNIT FOLDERS ================= */}
+      {/* ================= UNIT VIEW ================= */}
       {selectedSubject && !selectedUnit && (
         <>
-          <button onClick={() => setSelectedSubject(null)}>⬅ Back to Subjects</button>
-          <h3>{selectedSubject}</h3>
+          <button
+            onClick={() => setSelectedSubject(null)}
+            className="mb-6 text-indigo-400 hover:underline"
+          >
+            ← Back to Subjects
+          </button>
 
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-            gap: "15px",
-            marginTop: "15px"
-          }}>
+          <h2 className="text-2xl font-bold mb-6">
+            {selectedSubject}
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {[...new Set(
               resources
                 .filter(r => r.subject === selectedSubject)
                 .map(r => r.unit || "Uncategorized")
             )].map(unit => (
-              <div
+              <button
                 key={unit}
                 onClick={() => setSelectedUnit(unit)}
-                style={{
-                  border: "1px solid #555",
-                  padding: "15px",
-                  borderRadius: "8px",
-                  cursor: "pointer"
-                }}
+                className="bg-slate-800 border border-slate-700 rounded-xl p-5
+                           hover:bg-slate-700 transition text-left"
               >
-                <h4>📁 Unit {unit}</h4>
-              </div>
+                <h3 className="text-lg font-semibold">
+                  📁 Unit {unit}
+                </h3>
+              </button>
             ))}
           </div>
         </>
       )}
 
-      {/* ================= FILES ================= */}
+      {/* ================= FILES VIEW ================= */}
       {selectedSubject && selectedUnit && (
         <>
-          <button onClick={() => setSelectedUnit(null)}>⬅ Back to Units</button>
+          <button
+            onClick={() => setSelectedUnit(null)}
+            className="mb-6 text-indigo-400 hover:underline"
+          >
+            ← Back to Units
+          </button>
 
-          <h3>{selectedSubject} → Unit {selectedUnit}</h3>
+          <h2 className="text-2xl font-bold mb-4">
+            {selectedSubject} → Unit {selectedUnit}
+          </h2>
 
           <input
             type="text"
             placeholder="Search by title..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ margin: "10px 0", padding: "5px" }}
+            className="mb-6 w-full max-w-md px-4 py-2 rounded-lg
+                       bg-slate-800 border border-slate-700 text-white"
           />
 
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
-            gap: "15px"
-          }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {resources
               .filter(r =>
                 r.subject === selectedSubject &&
@@ -141,11 +172,7 @@ const StudentDashboard = ({ role }) => {
               .map(file => (
                 <div
                   key={file.id}
-                  style={{
-                    border: "1px solid #333",
-                    padding: "15px",
-                    borderRadius: "8px"
-                  }}
+                  className="bg-slate-800 border border-slate-700 rounded-xl p-5"
                 >
                   {editingId === file.id ? (
                     <>
@@ -154,52 +181,66 @@ const StudentDashboard = ({ role }) => {
                         onChange={(e) =>
                           setEditData({ ...editData, title: e.target.value })
                         }
+                        className="w-full mb-2 px-3 py-2 rounded bg-slate-700"
                       />
                       <input
                         value={editData.subject}
                         onChange={(e) =>
                           setEditData({ ...editData, subject: e.target.value })
                         }
+                        className="w-full mb-2 px-3 py-2 rounded bg-slate-700"
                       />
                       <input
                         value={editData.unit}
                         onChange={(e) =>
                           setEditData({ ...editData, unit: e.target.value })
                         }
+                        className="w-full mb-4 px-3 py-2 rounded bg-slate-700"
                       />
 
-                      <button onClick={() => saveEdit(file.id)}>💾 Save</button>
-                      <button onClick={() => setEditingId(null)}>❌ Cancel</button>
+                      <button
+                        onClick={() => saveEdit(file.id)}
+                        className="mr-3 px-4 py-2 bg-green-600 rounded hover:bg-green-700"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        className="px-4 py-2 bg-slate-600 rounded hover:bg-slate-500"
+                      >
+                        Cancel
+                      </button>
                     </>
                   ) : (
                     <>
-                      <h4>{file.title}</h4>
-                      <p><strong>Unit:</strong> {file.unit || "—"}</p>
+                      <h3 className="text-lg font-bold mb-1">
+                        {file.title}
+                      </h3>
+                      <p className="text-sm text-slate-400 mb-4">
+                        Unit: {file.unit || "—"}
+                      </p>
 
                       <a
                         href={file.fileUrl}
                         target="_blank"
                         rel="noreferrer"
-                        style={{
-                          display: "inline-block",
-                          marginTop: "8px",
-                          padding: "6px 10px",
-                          background: "#007bff",
-                          color: "#fff",
-                          borderRadius: "4px",
-                          textDecoration: "none"
-                        }}
+                        className="inline-block mb-3 px-4 py-2
+                                   bg-indigo-600 rounded hover:bg-indigo-700"
                       >
-                        Download / View
+                        Open / Download
                       </a>
 
-                      {/* 🔐 MODERATOR ONLY ACTIONS */}
                       {role === "moderator" && (
-                        <div style={{ marginTop: "10px" }}>
-                          <button onClick={() => startEdit(file)}>✏ Edit</button>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => startEdit(file)}
+                            className="text-yellow-400 hover:underline"
+                          >
+                            ✏ Edit
+                          </button>
                           <button
                             onClick={() => handleDelete(file.id)}
-                            style={{ marginLeft: "8px", color: "red" }}
+                            className="text-red-400 hover:underline"
                           >
                             🗑 Delete
                           </button>
