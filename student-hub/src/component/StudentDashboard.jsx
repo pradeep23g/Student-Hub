@@ -1,12 +1,17 @@
 import { useEffect, useState } from "react";
 import { getPublishedResources } from "../resourceService";
 import { updateResource, deleteResource } from "../adminService";
+import ChatComponent from "./ChatComponent";
+import { extractTextFromPDF } from "../utils/pdfUtils";
 
 const StudentDashboard = ({ role }) => {
   const [resources, setResources] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
+
+  const [activePdfText, setActivePdfText] = useState("");
+  const [activeFileName, setActiveFileName] = useState("");
 
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({
@@ -220,15 +225,20 @@ const StudentDashboard = ({ role }) => {
                         Unit: {file.unit || "—"}
                       </p>
 
-                      <a
-                        href={file.fileUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-block mb-3 px-4 py-2
-                                   bg-indigo-600 rounded hover:bg-indigo-700"
+                      <button
+                        onClick={async () => {
+                          window.open(file.fileUrl, "_blank");
+
+                          setActiveFileName(file.title);
+                          console.log("Extracting text for AI...");
+                          const text = await extractTextFromPDF(file.fileUrl);
+                          setActivePdfText(text);
+                          console.log("Extraction done!", text.length, "chars");
+                        }}
+                        className="inline-block mb-3 px-4 py-2 bg-indigo-600 rounded hover:bg-indigo-700 text-white"
                       >
-                        Open / Download
-                      </a>
+                        Open & Enable AI
+                      </button>
 
                       {role === "moderator" && (
                         <div className="flex gap-3">
@@ -248,10 +258,15 @@ const StudentDashboard = ({ role }) => {
                       )}
                     </>
                   )}
+
                 </div>
               ))}
           </div>
         </>
+      )}
+      {/* Only show chat if we have extracted text */}
+      {activePdfText && (
+        <ChatComponent pdfText={activePdfText} fileName={activeFileName} />
       )}
     </div>
   );
