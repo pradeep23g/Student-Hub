@@ -21,3 +21,25 @@ export const getPublishedResources = async () => {
     return [];
   }
 };
+export const getUserUploads = async (userId) => {
+  try {
+    const q = query(
+      collection(db, "resources"),
+      where("uploadedBy", "==", userId),
+      orderBy("createdAt", "desc")
+    );
+
+    const snapshot = await getDocs(q);
+    
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+  } catch (error) {
+    console.error("Error fetching user uploads:", error);
+    
+    
+    return [];
+  }
+};

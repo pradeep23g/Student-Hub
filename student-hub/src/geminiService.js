@@ -8,7 +8,7 @@ export const getGeminiResponse = async (history, pdfText) => {
   try {
     if (!API_KEY) throw new Error("Missing Gemini API Key");
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
     // We feed the PDF content as "System Context"
     const prompt = `

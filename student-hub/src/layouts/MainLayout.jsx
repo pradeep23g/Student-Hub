@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
-export default function MainLayout({ children, onLogout, isLoggedIn }) {
+export default function MainLayout({ children, onLogout, isLoggedIn, onProfileClick }) {
+  // Note: ideally use your useDarkMode hook here, but this works for now
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
@@ -34,16 +35,30 @@ export default function MainLayout({ children, onLogout, isLoggedIn }) {
               {dark ? "☀️" : "🌙"}
             </button>
 
-            {/* LOGOUT */}
+            {/* LOGGED IN BUTTONS */}
             {isLoggedIn && (
-              <button
-                onClick={onLogout}
-                className="px-4 py-1.5 rounded-lg
-                           bg-red-600 text-white
-                           hover:bg-red-700 transition"
-              >
-                Logout
-              </button>
+              <>
+                {/* ✅ NEW: My Profile Button (Styled to match your theme) */}
+                <button
+                  onClick={onProfileClick}
+                  className="px-4 py-1.5 rounded-lg font-medium
+                             text-slate-700 dark:text-slate-200
+                             hover:bg-slate-300 dark:hover:bg-slate-700 
+                             transition"
+                >
+                  My Profile
+                </button>
+
+                {/* LOGOUT */}
+                <button
+                  onClick={onLogout}
+                  className="px-4 py-1.5 rounded-lg
+                             bg-red-600 text-white
+                             hover:bg-red-700 transition"
+                >
+                  Logout
+                </button>
+              </>
             )}
           </div>
 
