@@ -6,9 +6,11 @@ import {
   doc,
   deleteDoc,
   updateDoc,
+  getDoc,
   serverTimestamp
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { ref, deleteObject } from "firebase/storage";
+import { db, storage } from "./firebase"; // ✅ Ensure 'storage' is imported
 
 /* ================= RAW MODERATION QUEUE ================= */
 export const getModerationQueue = async () => {
@@ -29,15 +31,15 @@ export const getModerationQueue = async () => {
   }
 };
 
-/* ================= PUBLISH RESOURCE ================= */
+/* ================= PUBLISH RESOURCE (FIXED) ================= */
 export const publishResource = async (docId, finalData) => {
   try {
     const docRef = doc(db, "resources", docId);
 
+    // ✅ THE FIX: We use "...finalData" to let ALL fields pass through.
+    // This ensures 'fullText' and 'aiReady' are saved to the database.
     await updateDoc(docRef, {
-      title: finalData.title,
-      subject: finalData.subject,
-      unit: finalData.unit,
+      ...finalData, 
       status: "published",
       moderatedAt: serverTimestamp()
     });
@@ -58,10 +60,28 @@ export const updateResource = async (id, updates) => {
   });
 };
 
-/* ================= REMOVE (DELETE) RESOURCE ================ */
+/* ================= REMOVE (DELETE) RESOURCE (FIXED) ================ */
+// I updated this to fix the "Storage Leak" we found earlier too.
 export const deleteResource = async (id) => {
   try {
-    await deleteDoc(doc(db, "resources", id));
+    const docRef = doc(db, "resources", id);
+    
+    // 1. Get file URL before deleting doc
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+       const fileUrl = docSnap.data().fileUrl;
+       if (fileUrl) {
+         try {
+            const fileRef = ref(storage, fileUrl);
+            await deleteObject(fileRef); // Delete from Bucket
+         } catch (e) {
+            console.warn("File already deleted from storage or not found");
+         }
+       }
+    }
+
+    // 2. Delete from Database
+    await deleteDoc(docRef);
     return true;
   } catch (error) {
     console.error("Delete failed:", error);
