@@ -10,7 +10,8 @@ import {
   serverTimestamp
 } from "firebase/firestore";
 import { ref, deleteObject } from "firebase/storage";
-import { db, storage } from "./firebase"; // ✅ Ensure 'storage' is imported
+import { db, storage } from "./firebase"; 
+import { addPoints } from "./services/userService"; // ✅ Import the Points System
 
 /* ================= RAW MODERATION QUEUE ================= */
 export const getModerationQueue = async () => {
@@ -31,18 +32,24 @@ export const getModerationQueue = async () => {
   }
 };
 
-/* ================= PUBLISH RESOURCE (FIXED) ================= */
+/* ================= PUBLISH RESOURCE (With Gamification 🎁) ================= */
 export const publishResource = async (docId, finalData) => {
   try {
     const docRef = doc(db, "resources", docId);
 
-    // ✅ THE FIX: We use "...finalData" to let ALL fields pass through.
-    // This ensures 'fullText' and 'aiReady' are saved to the database.
+    // 1. Update the document status
     await updateDoc(docRef, {
       ...finalData, 
       status: "published",
       moderatedAt: serverTimestamp()
     });
+
+    // 2. 🎁 REWARD THE UPLOADER
+    // If the file has an 'uploadedBy' User ID, give them points!
+    if (finalData.uploadedBy) {
+        console.log("🌟 Awarding 50 points to uploader:", finalData.uploadedBy);
+        await addPoints(finalData.uploadedBy, 50); 
+    }
 
     return true;
   } catch (error) {
@@ -60,13 +67,12 @@ export const updateResource = async (id, updates) => {
   });
 };
 
-/* ================= REMOVE (DELETE) RESOURCE (FIXED) ================ */
-// I updated this to fix the "Storage Leak" we found earlier too.
+/* ================= REMOVE (DELETE) RESOURCE ================ */
 export const deleteResource = async (id) => {
   try {
     const docRef = doc(db, "resources", id);
     
-    // 1. Get file URL before deleting doc
+    // 1. Get file URL before deleting doc to clean up Storage
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
        const fileUrl = docSnap.data().fileUrl;

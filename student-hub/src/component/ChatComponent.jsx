@@ -1,6 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { getGeminiResponse } from "../geminiService";
 import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css"; 
 
 export default function ChatComponent({ pdfText, fileName }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,7 +16,6 @@ export default function ChatComponent({ pdfText, fileName }) {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef(null);
 
-  // Auto-scroll to bottom of chat
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -24,18 +28,27 @@ export default function ChatComponent({ pdfText, fileName }) {
     setInput("");
     setLoading(true);
 
-    // Prepare history for API
-    const history = [{ parts: [{ text: input }] }];
-    const replyText = await getGeminiResponse(history, pdfText);
+    try {
+      // Prepare history for API
+      const history = messages.map(m => ({
+        role: m.role === 'user' ? 'user' : 'model',
+        parts: [{ text: m.text }]
+      }));
+      history.push({ role: 'user', parts: [{ text: input }] });
 
-    setMessages((prev) => [...prev, { role: "model", text: replyText }]);
-    setLoading(false);
+      const replyText = await getGeminiResponse(history, pdfText);
+      setMessages((prev) => [...prev, { role: "model", text: replyText }]);
+    } catch (error) {
+      console.error("Chat Error:", error);
+      setMessages((prev) => [...prev, { role: "model", text: "⚠️ Connection error. Please try again." }]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end font-sans">
       
-      {/* 1. THE CHAT WINDOW (AnimatePresence for smooth open/close) */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -56,12 +69,7 @@ export default function ChatComponent({ pdfText, fileName }) {
                   <p className="text-indigo-200 text-xs">Powered by Gemini</p>
                 </div>
               </div>
-              <button 
-                onClick={() => setMessages([])} 
-                className="text-white/60 hover:text-white text-xs"
-              >
-                Clear
-              </button>
+              <button onClick={() => setMessages([])} className="text-white/60 hover:text-white text-xs">Clear</button>
             </div>
 
             {/* Messages Area */}
@@ -73,15 +81,31 @@ export default function ChatComponent({ pdfText, fileName }) {
                       ? "bg-indigo-600 text-white rounded-tr-sm" 
                       : "bg-slate-800 text-slate-200 border border-slate-700 rounded-tl-sm"
                   }`}>
-                    {msg.text}
+                    
+                    {/* ✅ THE FIX: Wrapper div handles the styling now */}
+                    {msg.role === "model" ? (
+                        <div className="prose prose-sm prose-invert max-w-none break-words">
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm, remarkMath]}
+                                rehypePlugins={[rehypeKatex]}
+                                components={{
+                                    a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" className="text-indigo-400 underline" />,
+                                    p: ({node, ...props}) => <p {...props} className="mb-2 last:mb-0" />
+                                }}
+                            >
+                                {msg.text}
+                            </ReactMarkdown>
+                        </div>
+                    ) : (
+                        msg.text
+                    )}
+
                   </div>
                 </div>
               ))}
               {loading && (
                 <div className="flex justify-start">
-                  <div className="bg-slate-800 px-4 py-2 rounded-full text-xs text-slate-400 animate-pulse border border-slate-700">
-                    Thinking...
-                  </div>
+                  <div className="bg-slate-800 px-4 py-2 rounded-full text-xs text-slate-400 animate-pulse border border-slate-700">Thinking...</div>
                 </div>
               )}
               <div ref={scrollRef} />
@@ -95,16 +119,12 @@ export default function ChatComponent({ pdfText, fileName }) {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSend()}
                   placeholder="Ask a question..."
-                  className="w-full bg-slate-800 text-white text-sm rounded-xl pl-4 pr-12 py-3
-                             border border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
-                             outline-none transition-all placeholder:text-slate-500"
+                  className="w-full bg-slate-800 text-white text-sm rounded-xl pl-4 pr-12 py-3 border border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-500"
                 />
                 <button 
                   onClick={handleSend}
                   disabled={loading || !input.trim()}
-                  className="absolute right-2 top-2 p-1.5 bg-indigo-500 text-white rounded-lg 
-                             hover:bg-indigo-400 disabled:opacity-50 disabled:hover:bg-indigo-500
-                             transition-colors"
+                  className="absolute right-2 top-2 p-1.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-400 disabled:opacity-50 transition-colors"
                 >
                   ➤
                 </button>
@@ -114,17 +134,11 @@ export default function ChatComponent({ pdfText, fileName }) {
         )}
       </AnimatePresence>
 
-      {/* 2. THE FLOATING BUTTON (FAB) */}
       <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
-        className={`h-14 w-14 rounded-full shadow-2xl flex items-center justify-center text-2xl
-                    transition-all duration-300 border border-white/20
-                    ${isOpen 
-                      ? "bg-slate-800 text-white rotate-90" 
-                      : "bg-gradient-to-r from-indigo-500 to-violet-500 text-white hover:shadow-indigo-500/50"
-                    }`}
+        className={`h-14 w-14 rounded-full shadow-2xl flex items-center justify-center text-2xl transition-all duration-300 border border-white/20 ${isOpen ? "bg-slate-800 text-white rotate-90" : "bg-gradient-to-r from-indigo-500 to-violet-500 text-white hover:shadow-indigo-500/50"}`}
       >
         {isOpen ? "✕" : "✨"}
       </motion.button>
