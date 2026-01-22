@@ -6,29 +6,16 @@ import { db } from "../firebase";
 
 /* ================= POINTS & STREAK SYSTEM ================= */
 
-/**
- * Adds points to a user's profile.
- * @param {string} userId 
- * @param {number} amount 
- */
 export const addPoints = async (userId, amount) => {
   if (!userId) return;
   const userRef = doc(db, "users", userId);
-  
   try {
-    // Increment points using atomic operation
-    await updateDoc(userRef, {
-      points: increment(amount)
-    });
+    await updateDoc(userRef, { points: increment(amount) });
   } catch (error) {
-    console.warn("Could not update points (user might not exist yet):", error);
+    console.warn("Error adding points:", error);
   }
 };
 
-/**
- * Checks and updates the daily streak.
- * Should be called once when the dashboard loads.
- */
 export const checkAndBumpStreak = async (userId) => {
   if (!userId) return;
   const userRef = doc(db, "users", userId);
@@ -37,36 +24,41 @@ export const checkAndBumpStreak = async (userId) => {
   if (!userSnap.exists()) return;
 
   const data = userSnap.data();
-  const lastActive = data.lastActive?.toDate(); // Convert Firestore timestamp
+  // Handle Firestore Timestamp or standard Date
+  const lastActive = data.lastActive?.toDate ? data.lastActive.toDate() : new Date(data.lastActive);
   const now = new Date();
   
-  // If never active, set to today
-  if (!lastActive) {
+  if (!data.lastActive) {
+    // First time login
     await updateDoc(userRef, { 
       streak: 1, 
       lastActive: serverTimestamp(),
-      points: increment(10) // Welcome bonus
+      points: increment(10) 
     });
     return { streak: 1, gained: 10 };
   }
 
-  // Check difference in days
-  const diffTime = Math.abs(now - lastActive);
-  const diffDays = diffTime / (1000 * 60 * 60 * 24);
+  // Normalize dates to midnight to compare "days" not "milliseconds"
+  const lastDate = new Date(lastActive);
+  lastDate.setHours(0,0,0,0);
+  const today = new Date();
+  today.setHours(0,0,0,0);
 
-  if (diffDays < 1) {
-    // Already logged in today, do nothing
-    return { streak: data.streak || 1, gained: 0 };
-  } else if (diffDays < 2) {
-    // Consecutive day! Increment streak
+  const diffTime = Math.abs(today - lastDate);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return { streak: data.streak || 1, gained: 0 }; // Already logged in today
+  } else if (diffDays === 1) {
+    // Consecutive day
     await updateDoc(userRef, {
       streak: increment(1),
       lastActive: serverTimestamp(),
-      points: increment(20) // Streak bonus
+      points: increment(20)
     });
     return { streak: (data.streak || 1) + 1, gained: 20 };
   } else {
-    // Streak broken :( Reset to 1
+    // Streak broken
     await updateDoc(userRef, {
       streak: 1,
       lastActive: serverTimestamp()
@@ -75,7 +67,7 @@ export const checkAndBumpStreak = async (userId) => {
   }
 };
 
-/* ================= BOOKMARKS (Keep existing logic) ================= */
+/* ================= BOOKMARKS ================= */
 export const toggleBookmark = async (userId, resourceId) => {
   const bookmarkRef = doc(db, "users", userId, "bookmarks", resourceId);
   const docSnap = await getDoc(bookmarkRef);
@@ -94,10 +86,9 @@ export const getUserBookmarks = async (userId) => {
   return snapshot.docs.map(doc => doc.id);
 };
 
-/* ================= LEADERBOARD (Updated for Points) ================= */
+/* ================= LEADERBOARD ================= */
 export const getLeaderboardData = async () => {
   try {
-    // Get top 10 users sorted by points
     const usersRef = collection(db, "users");
     const q = query(usersRef, orderBy("points", "desc"), limit(10));
     const snapshot = await getDocs(q);
@@ -105,6 +96,7 @@ export const getLeaderboardData = async () => {
     return snapshot.docs.map(doc => ({
       uid: doc.id,
       name: doc.data().displayName || doc.data().email?.split('@')[0] || "Scholar",
+      email: doc.data().email,
       points: doc.data().points || 0,
       streak: doc.data().streak || 0
     }));
@@ -114,7 +106,6 @@ export const getLeaderboardData = async () => {
   }
 };
 
-// Helper to get single user stats
 export const getUserStats = async (userId) => {
     if(!userId) return null;
     const snap = await getDoc(doc(db, "users", userId));
