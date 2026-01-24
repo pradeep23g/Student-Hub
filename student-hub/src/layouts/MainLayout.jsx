@@ -1,10 +1,8 @@
-/* src/layouts/MainLayout.jsx */
 import { useEffect, useState } from "react";
 
-export default function MainLayout({ children, onLogout, isLoggedIn, onProfileClick }) {
+export default function MainLayout({ children, onLogout, isLoggedIn, onProfileClick, headerExtra }) {
   const [dark, setDark] = useState(false);
 
-  // Check local storage on mount
   useEffect(() => {
     const isDark = localStorage.getItem("theme") === "dark";
     setDark(isDark);
@@ -21,10 +19,9 @@ export default function MainLayout({ children, onLogout, isLoggedIn, onProfileCl
   };
 
   return (
-    <div className="min-h-screen relative overflow-x-hidden transition-colors duration-500
-                    bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans">
+    <div className="min-h-screen relative overflow-x-hidden transition-colors duration-500 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans">
       
-      {/* ANIMATED BACKGROUND MESH */}
+      {/* BACKGROUND */}
       <div className="fixed inset-0 z-0 pointer-events-none opacity-40 dark:opacity-20">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-400 rounded-full mix-blend-multiply filter blur-[128px] animate-float opacity-70"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-400 rounded-full mix-blend-multiply filter blur-[128px] animate-float opacity-70" style={{animationDelay: "2s"}}></div>
@@ -33,38 +30,38 @@ export default function MainLayout({ children, onLogout, isLoggedIn, onProfileCl
 
       {/* NAVBAR */}
       <nav className="sticky top-0 z-50 glass-panel border-b-0 border-b-white/10 rounded-b-2xl mx-4 mt-2">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap justify-between items-center gap-4">
           <h1 className="text-2xl font-black tracking-tighter flex items-center gap-2 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 cursor-pointer hover:scale-105 transition-transform">
             <span>📚</span> Student Hub
             <span className="text-xs font-bold text-slate-500 bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full uppercase tracking-wide">Beta</span>
           </h1>
 
           <div className="flex items-center gap-4">
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-full bg-slate-200/50 dark:bg-slate-700/50 hover:bg-indigo-500/20 transition backdrop-blur-md"
-              title="Toggle Theme"
-            >
+            {/* ✅ HEADER EXTRA (Toggle Button Slot) */}
+            {headerExtra && (
+                <div className="mr-2 border-r border-slate-300 dark:border-white/10 pr-4 hidden sm:block">
+                    {headerExtra}
+                </div>
+            )}
+
+            <button onClick={toggleTheme} className="p-2 rounded-full bg-slate-200/50 dark:bg-slate-700/50 hover:bg-indigo-500/20 transition backdrop-blur-md">
               {dark ? "🌙" : "☀️"}
             </button>
 
             {isLoggedIn && (
               <div className="flex items-center gap-3">
-                <button
-                  onClick={onProfileClick}
-                  className="hidden sm:block px-4 py-2 rounded-xl font-bold text-sm bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 transition shadow-sm"
-                >
+                <button onClick={onProfileClick} className="hidden sm:block px-4 py-2 rounded-xl font-bold text-sm bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 transition shadow-sm">
                   My Profile
                 </button>
-                <button
-                  onClick={onLogout}
-                  className="px-4 py-2 rounded-xl font-bold text-sm bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white transition"
-                >
+                <button onClick={onLogout} className="px-4 py-2 rounded-xl font-bold text-sm bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white transition">
                   Logout
                 </button>
               </div>
             )}
           </div>
+          
+          {/* Mobile Header Extra */}
+          {headerExtra && <div className="w-full sm:hidden flex justify-center">{headerExtra}</div>}
         </div>
       </nav>
 

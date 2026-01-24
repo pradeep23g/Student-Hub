@@ -90,16 +90,22 @@ export const getUserBookmarks = async (userId) => {
 export const getLeaderboardData = async () => {
   try {
     const usersRef = collection(db, "users");
+    // ✅ Limit to Top 10 to prevent massive renders
     const q = query(usersRef, orderBy("points", "desc"), limit(10));
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map(doc => ({
-      uid: doc.id,
-      name: doc.data().displayName || doc.data().email?.split('@')[0] || "Scholar",
-      email: doc.data().email,
-      points: doc.data().points || 0,
-      streak: doc.data().streak || 0
-    }));
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        uid: doc.id,
+        // ✅ PRIVACY FIX: Never return email parts. Only displayName or null.
+        // The UI will handle the "Anonymous Scholar" fallback.
+        name: data.displayName || null,
+        email: null, // Explicitly nullify email to be safe
+        points: data.points || 0,
+        streak: data.streak || 0
+      };
+    });
   } catch (error) {
     console.error("Error fetching leaderboard:", error);
     return [];
@@ -110,4 +116,23 @@ export const getUserStats = async (userId) => {
     if(!userId) return null;
     const snap = await getDoc(doc(db, "users", userId));
     return snap.exists() ? snap.data() : null;
+};
+
+/* ================= IDENTITY MANAGEMENT ================= */
+
+/**
+ * Updates the user's Display Name in Firestore.
+ */
+export const updateUserName = async (userId, newName) => {
+  if (!userId || !newName.trim()) return false;
+  try {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, { 
+      displayName: newName.trim() 
+    });
+    return true;
+  } catch (error) {
+    console.error("Error updating name:", error);
+    return false;
+  }
 };

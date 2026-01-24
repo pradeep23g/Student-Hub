@@ -1,31 +1,53 @@
 import { useEffect, useState } from "react";
 import { getUserUploads } from "../resourceService";
-import { getUserStats } from "../services/userService"; 
+import { getUserStats, updateUserName } from "../services/userService"; 
 import { motion } from "framer-motion";
 
 export default function UserProfile({ user, onBack }) {
   const [uploads, setUploads] = useState([]);
-  const [stats, setStats] = useState({ points: 0, streak: 0 }); 
+  const [stats, setStats] = useState({ points: 0, streak: 0, displayName: "" }); 
   const [loading, setLoading] = useState(true);
+
+  // ✅ EDITING STATE
+  const [isEditing, setIsEditing] = useState(false);
+  const [newName, setNewName] = useState("");
 
   useEffect(() => {
     if (user?.uid) {
-      const fetchData = async () => {
-          // 1. Get Uploads
-          const userUploads = await getUserUploads(user.uid);
-          setUploads(userUploads);
-          
-          // 2. Get Gamification Stats
-          const userStats = await getUserStats(user.uid);
-          if (userStats) {
-              setStats({ points: userStats.points || 0, streak: userStats.streak || 0 });
-          }
-          
-          setLoading(false);
-      };
-      fetchData();
+      loadData();
     }
   }, [user]);
+
+  const loadData = async () => {
+      // 1. Get Uploads
+      const userUploads = await getUserUploads(user.uid);
+      setUploads(userUploads);
+      
+      // 2. Get Gamification Stats & Name
+      const userDoc = await getUserStats(user.uid);
+      if (userDoc) {
+          setStats({ 
+            points: userDoc.points || 0, 
+            streak: userDoc.streak || 0,
+            displayName: userDoc.displayName || "Scholar" 
+          });
+          setNewName(userDoc.displayName || "");
+      }
+      setLoading(false);
+  };
+
+  const handleSaveName = async () => {
+      if(!newName.trim()) return;
+      
+      const success = await updateUserName(user.uid, newName);
+      
+      if(success) {
+          setStats(prev => ({ ...prev, displayName: newName }));
+          setIsEditing(false);
+      } else {
+          alert("Failed to update name. Please try again.");
+      }
+  };
 
   return (
     <div className="max-w-5xl mx-auto p-4 animate-fade-in-up">
@@ -41,13 +63,47 @@ export default function UserProfile({ user, onBack }) {
         {/* Background Glow */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-[100px] pointer-events-none"></div>
 
-        <div className="h-28 w-28 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-5xl font-bold text-white shadow-2xl ring-4 ring-white/10">
-          {user.email[0].toUpperCase()}
+        {/* Avatar Circle */}
+        <div className="h-28 w-28 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-5xl font-bold text-white shadow-2xl ring-4 ring-white/10 shrink-0">
+          {stats.displayName ? stats.displayName[0].toUpperCase() : "S"}
         </div>
         
-        <div className="text-center md:text-left flex-1">
-          <h1 className="text-4xl font-black text-slate-800 dark:text-white mb-2">Welcome, Scholar 🎓</h1>
-          <p className="text-slate-500 dark:text-slate-400 font-mono text-sm mb-6">{user.email}</p>
+        <div className="text-center md:text-left flex-1 w-full">
+          
+          {/* ✅ EDITABLE NAME SECTION */}
+          <div className="flex flex-col md:flex-row items-center gap-3 mb-2 justify-center md:justify-start min-h-[50px]">
+            {isEditing ? (
+                <div className="flex gap-2 items-center animate-fade-in-up">
+                    <input 
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        className="bg-white/10 border border-white/20 rounded-lg px-3 py-1 text-slate-800 dark:text-white outline-none focus:border-indigo-500 text-xl font-bold w-full md:w-auto placeholder-slate-400"
+                        placeholder="Enter your name"
+                        autoFocus
+                    />
+                    <button onClick={handleSaveName} className="text-xs bg-green-500 text-white px-3 py-2 rounded-lg font-bold hover:bg-green-600 transition">Save</button>
+                    <button onClick={() => setIsEditing(false)} className="text-xs bg-slate-500 text-white px-3 py-2 rounded-lg font-bold hover:bg-slate-600 transition">Cancel</button>
+                </div>
+            ) : (
+                <>
+                    <h1 className="text-4xl font-black text-slate-800 dark:text-white">
+                        {stats.displayName}
+                    </h1>
+                    <button 
+                        onClick={() => setIsEditing(true)} 
+                        className="p-2 text-slate-400 hover:text-indigo-500 transition rounded-full hover:bg-indigo-50 dark:hover:bg-white/5" 
+                        title="Edit Name"
+                    >
+                        ✏️
+                    </button>
+                </>
+            )}
+          </div>
+
+          <p className="text-slate-500 dark:text-slate-400 font-mono text-sm mb-6 flex items-center justify-center md:justify-start gap-2">
+             📧 {user.email} 
+             <span className="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-300 dark:border-slate-700">PRIVATE</span>
+          </p>
           
           {/* STATS GRID */}
           <div className="flex flex-wrap justify-center md:justify-start gap-4">
@@ -55,12 +111,10 @@ export default function UserProfile({ user, onBack }) {
               🚀 {uploads.length} Uploads
             </div>
             
-            {/* ✅ REAL POINTS DISPLAY */}
             <div className="px-5 py-3 bg-yellow-500/10 border border-yellow-500/20 text-yellow-600 dark:text-yellow-400 rounded-2xl text-sm font-bold flex items-center gap-2">
               💎 {stats.points} Points
             </div>
 
-            {/* ✅ REAL STREAK DISPLAY */}
             <div className="px-5 py-3 bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 rounded-2xl text-sm font-bold flex items-center gap-2">
               🔥 {stats.streak} Day Streak
             </div>
