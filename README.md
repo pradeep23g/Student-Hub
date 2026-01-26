@@ -5,7 +5,7 @@
 **Student Hub is a student-driven, AI-powered learning platform that transforms scattered academic notes into an interactive, moderated, and gamified knowledge ecosystem.**
 
   - **Live Demo:** https://student-hub-0001.web.app
-  - **Submission:** Hackathon Final 2026
+  - **Submission:** Lofi Hackathon
   - **Status:** ✅ Production Ready (v1.0.0)
 ----
 
@@ -133,13 +133,10 @@ VITE_GEMINI_API_KEY=your_gemini_api_key</pre>
 ---
 
 # 👥 Team
-- **Pradeep Kumar** - Full Stack Development, AI Integration, System Design
-
-- **Advik Naguraj** 
-
-- **Sri Dharshan** 
-
-- **Viji Ragav**
+- **Pradeep Kumar** — Full Stack Development, AI Integration, System Architecture
+- **Advik Nagaraj** — UI/UX Design, Visual System, Presentation
+- **Sri Dharshan** — Problem Research, Validation, Product Testing
+- **Viji Ragav** — Pitch Storytelling, Presentation Flow
 
 ---
 
