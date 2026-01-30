@@ -133,10 +133,10 @@ VITE_GEMINI_API_KEY=your_gemini_api_key</pre>
 ---
 
 # 👥 Team
-- **Pradeep Kumar** — Full Stack Development, AI Integration, System Architecture
-- **Advik Nagaraj** — UI/UX Design, Visual System, Presentation
+- **Pradeep Kumar** — Full Stack Development, AI Integration, Visual System
+- **Advik Nagaraj** — UI/UX Design, Pitch Storytelling, System Architecture
 - **Sri Dharshan** — Problem Research, Validation, Product Testing
-- **Viji Ragav** — Pitch Storytelling, Presentation Flow
+- **Viji Ragav** —  Presentation Flow, Research and development, Presentation
 
 ---
 
